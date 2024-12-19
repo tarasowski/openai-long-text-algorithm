@@ -1,6 +1,10 @@
 from openai import OpenAI
 import os
 
+TEXT_GENERATION_MODEL = "gpt-4o-mini-2024-07-18" #"gpt-4"
+TEXT_FORMATTING_MODEL = "gpt-4o-mini-2024-07-18"
+
+
 client = OpenAI(
     api_key=os.environ.get("OPENAI_API_KEY"),  # This is the default and can be omitted
 )
@@ -8,6 +12,22 @@ client = OpenAI(
 # Function to count words in a text
 def count_words(text):
     return len(text.split())
+
+
+def format_text(generated_text):
+  print(f"Start formatting the final output...")
+  formatted_response = client.chat.completions.create(
+      model=TEXT_FORMATTING_MODEL,
+      messages=[
+        {"role": "system", "content": "You are a precise writer."},
+        {"role": "user", "content": f"The current text is:\n\n{generated_text}\n\n"
+         f"Format this text, breakdown into meaningful paragraphs."}
+        ],
+      max_tokens=3000,
+      temperature=0.7,
+      )
+  response = formatted_response.choices[0].message.content
+  return response
 
 # Function to generate text of a specific word count
 def generate_text_exact_words(user_input, target_word_count):
@@ -20,7 +40,7 @@ def generate_text_exact_words(user_input, target_word_count):
 
     # Call OpenAI's new ChatCompletion API
     response = client.chat.completions.create(
-        model="gpt-4",
+        model=TEXT_GENERATION_MODEL,
         messages=[
             {"role": "system", "content": "You are a precise writer."},
             {"role": "user", "content": prompt}
@@ -39,7 +59,7 @@ def generate_text_exact_words(user_input, target_word_count):
 
         # Add the previous context to the messages
         additional_response = client.chat.completions.create(
-            model="gpt-4",
+            model=TEXT_GENERATION_MODEL,
             messages=[
                 {"role": "system", "content": "You are a precise writer."},
                 {"role": "user", "content": f"Write an article or text based on the following input:\n\n\"{user_input}\"\n\n"
@@ -53,9 +73,11 @@ def generate_text_exact_words(user_input, target_word_count):
 
         # Append the additional content to the original text
         generated_text += "\n\n" + additional_response.choices[0].message.content
+        print(generated_text)
 
     # Final word count adjustment if needed
     final_word_count = count_words(generated_text)
+    print("final word count: ", final_word_count)
 
     # If the generated text exceeds the target, truncate it
     if final_word_count > target_word_count:
@@ -68,7 +90,7 @@ def generate_text_exact_words(user_input, target_word_count):
 
         # Use the current content as context and generate the missing words
         additional_response = client.chat.completions.create(
-            model="gpt-4",
+            model=TEXT_GENERATION_MODEL,
             messages=[
                 {"role": "system", "content": "You are a precise writer."},
                 {"role": "user", "content": f"The current text is:\n\n{generated_text}\n\n"
@@ -89,24 +111,13 @@ def generate_text_exact_words(user_input, target_word_count):
         if final_word_count > target_word_count:
             generated_text = " ".join(generated_text.split()[:target_word_count])
 
-        print(f"Start formatting the final output...")
-        formatted_response = client.chat.completions.create(
-            model="gpt-4o-mini-2024-07-18",
-            messages=[
-                {"role": "system", "content": "You are a precise writer."},
-                {"role": "user", "content": f"The current text is:\n\n{generated_text}\n\n"
-                 f"Format this text, breakdown into meaningful paragraphs."}
-            ],
-            max_tokens=3000,
-            temperature=0.7,
-        )
-        response = formatted_response.choices[0].message.content
+    response = format_text(generated_text)
     return response
 
 # Example usage
 if __name__ == "__main__":
     user_topic = input("Enter the topic you want the text to be about: ")
-    target_word_count = 1500
+    target_word_count = 1200
 
     result = generate_text_exact_words(user_topic, target_word_count)
     with open("generated_text.txt", "w") as file:
