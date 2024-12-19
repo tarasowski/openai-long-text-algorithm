@@ -117,7 +117,7 @@ def generate_text_exact_words(user_input, target_word_count):
 # Example usage
 if __name__ == "__main__":
     user_topic = input("Enter the topic you want the text to be about: ")
-    target_word_count = 1200
+    target_word_count = 1500
 
     result = generate_text_exact_words(user_topic, target_word_count)
     with open("generated_text.txt", "w") as file:
