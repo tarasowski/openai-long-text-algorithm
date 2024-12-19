@@ -15,7 +15,7 @@ def generate_text_exact_words(user_input, target_word_count):
         f"Write an article or text based on the following input:\n\n"
         f"\"{user_input}\"\n\n"
         f"The article must be exactly {target_word_count} words long. "
-        f"Be clear, concise, and focused on the topic."
+        f"Be clear, concise, and focused on the topic without a summary or conclusion at the end."
     )
 
     # Call OpenAI's new ChatCompletion API
@@ -43,9 +43,9 @@ def generate_text_exact_words(user_input, target_word_count):
             messages=[
                 {"role": "system", "content": "You are a precise writer."},
                 {"role": "user", "content": f"Write an article or text based on the following input:\n\n\"{user_input}\"\n\n"
-                 f"The article must be exactly {target_word_count} words long. "
+                 f"The article must be exactly {target_word_count} words long."
                  f"Current text:\n\n{generated_text}\n\n"
-                 f"Expand on the topic to add {additional_words_needed} words while maintaining coherence."}
+                 f"Expand on the topic to add {additional_words_needed} words while maintaining coherence without a summary or conclusion at the end."}
             ],
             max_tokens=3000,
             temperature=0.7,
@@ -73,7 +73,8 @@ def generate_text_exact_words(user_input, target_word_count):
                 {"role": "system", "content": "You are a precise writer."},
                 {"role": "user", "content": f"The current text is:\n\n{generated_text}\n\n"
                  f"Expand this text to ensure it reaches exactly {target_word_count} words. "
-                 f"Add {remaining_words} more words in a coherent manner."}
+                 f"Add {remaining_words} more words in a coherent manner."
+                 f"Don't duplicate information from the the provided text, add new information."}
             ],
             max_tokens=3000,
             temperature=0.7,
@@ -88,8 +89,19 @@ def generate_text_exact_words(user_input, target_word_count):
         if final_word_count > target_word_count:
             generated_text = " ".join(generated_text.split()[:target_word_count])
 
-    # Return the final adjusted text
-    return generated_text
+        print(f"Start formatting the final output...")
+        formatted_response = client.chat.completions.create(
+            model="gpt-4o-mini-2024-07-18",
+            messages=[
+                {"role": "system", "content": "You are a precise writer."},
+                {"role": "user", "content": f"The current text is:\n\n{generated_text}\n\n"
+                 f"Format this text, breakdown into meaningful paragraphs."}
+            ],
+            max_tokens=3000,
+            temperature=0.7,
+        )
+        response = formatted_response.choices[0].message.content
+    return response
 
 # Example usage
 if __name__ == "__main__":
